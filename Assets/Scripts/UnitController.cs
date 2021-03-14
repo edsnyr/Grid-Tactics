@@ -34,7 +34,7 @@ public class UnitController : MonoBehaviour
                     if(unit.position == mousePos) {
                         mode = Mode.Pathfind;
                         selectedUnit = unit;
-                        pathfinder.StartPathfind(mousePos);
+                        pathfinder.StartPathfind(mousePos, unit.maxMovement);
                     }
                 }
             } else if(mode == Mode.Pathfind) {
@@ -61,5 +61,16 @@ public class UnitController : MonoBehaviour
         yield return StartCoroutine(selectedUnit.MoveOnPath(pathfinder.GetPath(), moveTime));
     }
 
+    public Unit GetSelectedUnit() {
+        return selectedUnit;
+    }
+
+    public Unit CheckForUnit(Vector3Int pos) {
+        foreach(Unit unit in units) {
+            if(unit.position == pos)
+                return unit;
+        }
+        return null;
+    }
     
 }

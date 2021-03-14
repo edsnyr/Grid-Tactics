@@ -14,7 +14,7 @@ public class MovementGrid : MonoBehaviour
 
     Dictionary<Vector3Int, MovementTile> movementTiles;
 
-    List<Vector3Int> adjacents = new List<Vector3Int> {
+    readonly List<Vector3Int> adjacents = new List<Vector3Int> {
         new Vector3Int(0,1,0),
         new Vector3Int(-1,0,0),
         new Vector3Int(0,-1,0),

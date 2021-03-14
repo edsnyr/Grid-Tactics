@@ -30,11 +30,12 @@ public class Pathfinder : MonoBehaviour {
         
     }
 
-    public void StartPathfind(Vector3Int mousePos) {
+    public void StartPathfind(Vector3Int mousePos, int maxMovement) {
         path = new List<Vector3Int>();
         path.Add(GetMousePosition());
         lastValidEndPoint = path[0];
         unitController.prevMousePos = mousePos;
+        maxLength = maxMovement;
         pathChanged = true;
     }
 
@@ -134,6 +135,11 @@ public class Pathfinder : MonoBehaviour {
             }
 
             foreach(MovementTile neighbor in currentTile.neighbors) {
+                Unit unitAtNeighbor = unitController.CheckForUnit(neighbor.coordinates);
+                if((unitAtNeighbor != null && unitAtNeighbor.teamNumber != unitController.GetSelectedUnit().teamNumber)) {
+                    closedTiles.Add(neighbor);
+                    continue;
+                }
                 if(closedTiles.Contains(neighbor)) {
                     continue;
                 }
@@ -152,6 +158,12 @@ public class Pathfinder : MonoBehaviour {
 
         }
         Debug.Log("Escaped");
+        /*
+        List<Vector3Int> escapedList = new List<Vector3Int> {
+            startPos
+        };
+        return escapedList;
+        */
         return null;
     }
 
@@ -182,6 +194,12 @@ public class Pathfinder : MonoBehaviour {
         int currentLength = GetCurrentPathLength(currentPath);
         //Debug.Log("Current Length before loop: " + currentLength);
         
+        if(unitController.CheckForUnit(addedPath[addedPath.Count - 1]) != null) {
+            Debug.Log("Cannot stop on another unit");
+            currentPath = ReturnToLastValidEndPoint(currentPath);
+            return currentPath;
+        }
+
         foreach(Vector3Int tile in addedPath) {
             int newLength = currentLength + movementGrid.GetMovementTile(tile).movementCost;
             //Debug.Log("New Length: " + newLength);
@@ -227,6 +245,10 @@ public class Pathfinder : MonoBehaviour {
                     path.RemoveAt(j);
                 }
                 //Debug.Log("Retread current path, backtracking");
+                if(unitController.CheckForUnit(path[path.Count - 1]) != null) {
+                    Debug.Log("Unit on retreaded path, back up one more");
+                    path.RemoveAt(path.Count - 1);
+                }
                 lastValidEndPoint = path[path.Count - 1];
                 go = false;
                 return;

@@ -7,6 +7,8 @@ using UnityEngine.Tilemaps;
 public class PathDisplay : MonoBehaviour
 {
 
+    enum RangeStatus { Movement, Attack, BlockedByAlly, BlockedByEnemy };
+
     public Pathfinder pathfinder;
     public MovementGrid movementGrid;
     public UnitController unitController;
@@ -23,7 +25,8 @@ public class PathDisplay : MonoBehaviour
     public Tile arrowTurn;
     public Tile arrowEnd;
 
-    public Tile tileHighlight;
+    public Tile movementTileHighlight;
+    public Tile attackTileHighlight;
 
     bool showingRange = false;
 
@@ -160,20 +163,116 @@ public class PathDisplay : MonoBehaviour
     private void DrawRange() {
         rangeOverlayMap.ClearAllTiles();
         Vector3Int start = pathfinder.GetPath()[0];
-        Debug.Log("Draw Range Start: " + start);
+        //Debug.Log("Draw Range Start: " + start);
         int length = pathfinder.maxLength;
+        Dictionary<Vector3Int, RangeStatus> highlightStatuses = new Dictionary<Vector3Int, RangeStatus>();
         for(int i = length * -1; i <= length; i++) {
             for(int j = length * -1; j <= length; j++) {
                 Vector3Int dest = new Vector3Int(start.x + i, start.y + j, 0);
+                if((Mathf.Abs(i) + Mathf.Abs(j)) > length || unitController.CheckForUnit(dest) != null) { //if true, always out of range even if there would be a direct path
+                    continue;
+                }
                 if(movementGrid.GetMovementTile(dest) != null) {
                     List<Vector3Int> testPath = pathfinder.AStar(start, dest, new List<Vector3Int> { start });
-                    if(testPath.Count > 0 && testPath[testPath.Count - 1] == dest) {
-                        rangeOverlayMap.SetTile(new Vector3Int(start.x + i, start.y + j, 0), tileHighlight);
+                    if(testPath == null) { //pathfinding escaped, no path
+                        List<Vector3Int> attackingTiles = GetAttackableTiles(unitController.GetSelectedUnit().position);
+                        foreach(Vector3Int location in attackingTiles) {
+                            if(!highlightStatuses.ContainsKey(location)) {
+                                Unit unitAtLocation = unitController.CheckForUnit(location);
+                                if(unitAtLocation != null) {
+                                    if(unitAtLocation.teamNumber == unitController.GetSelectedUnit().teamNumber) {
+                                        //Debug.Log("Marked blocked by ally");
+                                        highlightStatuses.Add(location, RangeStatus.BlockedByAlly);
+                                    } else {
+                                        //Debug.Log("Marked blocked by enemy");
+                                        highlightStatuses.Add(location, RangeStatus.BlockedByEnemy);
+                                        rangeOverlayMap.SetTile(location, attackTileHighlight);
+                                    }
+                                } else {
+                                    //Debug.Log("Marked attacking");
+                                    highlightStatuses.Add(location, RangeStatus.Attack);
+                                    rangeOverlayMap.SetTile(location, attackTileHighlight);
+                                }
+                            }
+                        }
+                    } else if(testPath.Count > 0 && testPath[testPath.Count - 1] == dest) {
+                        //Debug.Log("Getting attack highlights for: " + testPath[testPath.Count - 1]);
+                        List<Vector3Int> attackingTiles = GetAttackableTiles(testPath[testPath.Count - 1]);
+                        foreach(Vector3Int location in attackingTiles) {
+                            //Debug.Log("Enter Attack Highlight for location: " + location);
+                            if(!highlightStatuses.ContainsKey(location)) {
+                                Unit unitAtLocation = unitController.CheckForUnit(location);
+                                if(unitAtLocation != null) {
+                                    if(unitAtLocation.teamNumber == unitController.GetSelectedUnit().teamNumber) {
+                                        //Debug.Log("Marked blocked by ally");
+                                        highlightStatuses.Add(location, RangeStatus.BlockedByAlly);
+                                    } else {
+                                        //Debug.Log("Marked blocked by enemy");
+                                        highlightStatuses.Add(location, RangeStatus.BlockedByEnemy);
+                                        rangeOverlayMap.SetTile(location, attackTileHighlight);
+                                    }
+                                } else {
+                                    //Debug.Log("Marked attacking");
+                                    highlightStatuses.Add(location, RangeStatus.Attack);
+                                    rangeOverlayMap.SetTile(location, attackTileHighlight);
+                                }
+                            }
+                        }
+
+                        foreach(Vector3Int location in testPath) {
+                            if(highlightStatuses.ContainsKey(location)) {
+                                if(highlightStatuses[location] == RangeStatus.Movement || highlightStatuses[location] == RangeStatus.BlockedByAlly || highlightStatuses[location] == RangeStatus.BlockedByEnemy) {
+                                    continue;
+                                } else {
+                                    highlightStatuses[location] = RangeStatus.Movement;
+                                    rangeOverlayMap.SetTile(location, movementTileHighlight);
+                                }
+                            } else if(unitController.CheckForUnit(location) != null) {
+                                if(unitController.CheckForUnit(location).teamNumber == unitController.GetSelectedUnit().teamNumber) {
+                                    highlightStatuses.Add(location, RangeStatus.BlockedByAlly);
+                                }
+                            } else {
+                                highlightStatuses.Add(location, RangeStatus.Movement);
+                                rangeOverlayMap.SetTile(location, movementTileHighlight);
+                            }
+                        }
                     }
                 }
-                
             }
         }
         showingRange = true;
+    }
+
+    private List<Vector3Int> GetAttackableTiles(Vector3Int location) {
+        List<Vector3Int> attackableTiles = new List<Vector3Int>();
+        int maxRange = unitController.GetSelectedUnit().maxAttackRange;
+        for(int i = maxRange * -1; i <= maxRange; i++) {
+            for(int j = maxRange * -1; j <= maxRange; j++) {
+                int dist = Mathf.Abs(i) + Mathf.Abs(j);
+                Debug.Log(i + " " + j + " " + dist);
+                if(dist == 0 || dist > maxRange || dist < unitController.GetSelectedUnit().minAttackRange) {
+                    //Debug.Log("Not in range");
+                    continue;
+                } else {
+                    Vector3Int attackingLocation = new Vector3Int(location.x + i, location.y + j, 0);
+                    Debug.Log(location);
+                    Debug.Log(attackingLocation);
+                    if(movementGrid.GetMovementTile(attackingLocation) != null) {
+                        attackableTiles.Add(attackingLocation);
+                    }
+                }
+            }
+        }
+        //Debug.Log("Number of attacking tiles: " + attackableTiles.Count);
+        return attackableTiles;
+        /*
+        for(int i = unitController.GetSelectedUnit().minAttackRange; i <= unitController.GetSelectedUnit().maxAttackRange; i++) {
+            foreach(Vector3Int adjacent in adjacents) {
+                Vector3Int checkLocation = location + (adjacent * i);
+
+            }
+        }
+        */
+        
     }
 }

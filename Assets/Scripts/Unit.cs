@@ -5,9 +5,21 @@ using UnityEngine;
 public class Unit : MonoBehaviour
 {
 
+    public enum GroundStatus { Grounded, Flying };
+
     public string unitName;
+    public int teamNumber;
     public Vector3Int position;
+
+    public int maxMovement;
+    public int minAttackRange;
+    public int maxAttackRange;
+    public GroundStatus groundStatus;
     public bool canMove;
+
+    private void Awake() {
+        transform.position = position;
+    }
 
     // Start is called before the first frame update
     void Start()
