@@ -13,10 +13,6 @@ public class Pathfinder : MonoBehaviour {
     public Tilemap movementOverlayMap;
     public MovementGrid movementGrid;
 
-    public Tile movementCost1;
-    public Tile movementCost2;
-    public Tile movementCost9;
-
     public int maxLength = 5;
 
     List<Vector3Int> path;
@@ -58,15 +54,18 @@ public class Pathfinder : MonoBehaviour {
         CheckForOverlap(ref go, destPos);
 
         if(go) {
-            List<Vector3Int> newPath = AStar(path[path.Count -1], destPos, ref go);
-
-            if(newPath[newPath.Count - 1] != destPos) {
+            List<Vector3Int> newPath = AStar(path[path.Count -1], destPos, path);
+            if(newPath == null) {
+                Debug.Log("Out of range, escaping");
+                return;
+            }
+            if(newPath.Count > 0 && newPath[newPath.Count - 1] != destPos) {
                 Debug.Log("Try reroute");
                 Vector3Int startPos = path[0];
                 path = new List<Vector3Int> {
                     startPos
                 };
-                List<Vector3Int> tryPath = AStar(path[0], destPos, ref go);
+                List<Vector3Int> tryPath = AStar(path[0], destPos, path);
                 Debug.Log("TryPath: " + tryPath.Count);
                 if(tryPath.Count != 0 && tryPath[tryPath.Count - 1] == destPos) {
                     path = tryPath;
@@ -79,6 +78,7 @@ public class Pathfinder : MonoBehaviour {
                 path = newPath;
                 Debug.Log("Found Path count: " + path.Count);
             }
+            lastValidEndPoint = path[path.Count - 1];
         }
 
         /*
@@ -101,13 +101,15 @@ public class Pathfinder : MonoBehaviour {
     }
 
 
-    private List<Vector3Int> AStar(Vector3Int startPos, Vector3Int destPos, ref bool go) {
+    public List<Vector3Int> AStar(Vector3Int startPos, Vector3Int destPos, List<Vector3Int> currentPath) {
         MovementTile startTile = movementGrid.GetMovementTile(startPos);
         MovementTile endTile = movementGrid.GetMovementTile(destPos);
 
         if(startTile == null || endTile == null) {
             Debug.Log("Start or end point invalid");
-            return path;
+            Debug.Log("startPos: " + startPos);
+            Debug.Log("destPos: " + destPos);
+            return null;
         }
 
         List<MovementTile> openTiles = new List<MovementTile>();
@@ -128,7 +130,7 @@ public class Pathfinder : MonoBehaviour {
             closedTiles.Add(currentTile);
 
             if(currentTile == endTile) {
-                return AddToPath(RetracePath(startTile, endTile), maxLength, ref go);
+                return AddToPath(RetracePath(startTile, endTile), maxLength, currentPath);
             }
 
             foreach(MovementTile neighbor in currentTile.neighbors) {
@@ -176,44 +178,46 @@ public class Pathfinder : MonoBehaviour {
         return path;
     }
 
-    private List<Vector3Int> AddToPath(List<Vector3Int> addedPath, int maxPathLength, ref bool go) {
-        int currentLength = GetCurrentPathLength();
-        Debug.Log("Current Length before loop: " + currentLength);
+    private List<Vector3Int> AddToPath(List<Vector3Int> addedPath, int maxPathLength, List<Vector3Int> currentPath) {
+        int currentLength = GetCurrentPathLength(currentPath);
+        //Debug.Log("Current Length before loop: " + currentLength);
         
         foreach(Vector3Int tile in addedPath) {
             int newLength = currentLength + movementGrid.GetMovementTile(tile).movementCost;
-            Debug.Log("New Length: " + newLength);
-            Debug.Log("Path Count: " + path.Count);
-            Debug.Log(tile);
+            //Debug.Log("New Length: " + newLength);
+            //Debug.Log("Path Count: " + currentPath.Count);
+            //Debug.Log(tile);
             if(newLength <= maxPathLength) {
-                path.Add(tile);
+                currentPath.Add(tile);
                 currentLength = newLength;
             } else {
                 Debug.Log("Path too long");
-                go = false;
-                ReturnToLastValidEndPoint();
-                return path;
+                currentPath = ReturnToLastValidEndPoint(currentPath);
+                return currentPath;
             }
         }
-        lastValidEndPoint = path[path.Count - 1];
-        return path;
+        //lastValidEndPoint = currentPath[currentPath.Count - 1];
+        return currentPath;
     }
 
-    private int GetCurrentPathLength() {
+    private int GetCurrentPathLength(List<Vector3Int> currentPath) {
         int currentLength = 0;
-        for(int i = 1; i < path.Count; i++) {
-            currentLength += movementGrid.GetMovementTile(path[i]).movementCost;
+        for(int i = 1; i < currentPath.Count; i++) {
+            currentLength += movementGrid.GetMovementTile(currentPath[i]).movementCost;
         }
         return currentLength;
     }
 
-    private void ReturnToLastValidEndPoint() {
-        for(int i = path.Count - 1; i >= 0; i--) {
-            if(path[i] != lastValidEndPoint) {
-                path.RemoveAt(i);
+    private List<Vector3Int> ReturnToLastValidEndPoint(List<Vector3Int> currentPath) {
+        for(int i = currentPath.Count - 1; i >= 0; i--) {
+            if(currentPath[i] != lastValidEndPoint) {
+                currentPath.RemoveAt(i);
             } else
-                return;
+                return currentPath;
         }
+        Debug.Log("Last valid end point not in list, returning empty list");
+        Debug.Log("Last Valid End Point: " + lastValidEndPoint);
+        return currentPath;
     }
 
     private void CheckForOverlap(ref bool go, Vector3Int newPos) {
@@ -222,24 +226,13 @@ public class Pathfinder : MonoBehaviour {
                 for(int j = path.Count - 1; j > i; j--) {
                     path.RemoveAt(j);
                 }
-                Debug.Log("Retread current path, backtracking");
+                //Debug.Log("Retread current path, backtracking");
                 lastValidEndPoint = path[path.Count - 1];
                 go = false;
                 return;
             }
         }
-    }
-
-    private void AddToPath(ref bool go, Vector3Int nextPos) {
-        if(path.Count > maxLength) {
-            go = false;
-            return;
-        }
-        Debug.Log(movementOverlayMap.GetTile(nextPos));
-        path.Add(nextPos);
-    }
-
-    
+    }    
 
     public List<Vector3Int> GetPath() {
         return path;

@@ -8,11 +8,13 @@ public class PathDisplay : MonoBehaviour
 {
 
     public Pathfinder pathfinder;
+    public MovementGrid movementGrid;
     public UnitController unitController;
 
     public Grid grid;
     public Tilemap arrowOverlayMap;
     public Tilemap rangeOverlayMap;
+    public Tilemap pointerOverlayMap;
     public Tile hoverTile;
 
     public Tile arrowOne;
@@ -30,12 +32,19 @@ public class PathDisplay : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+        Debug.Log(rangeOverlayMap.localBounds.min);
+        Debug.Log(rangeOverlayMap.localBounds.max);
     }
 
     // Update is called once per frame
     void Update()
     {
+        Vector3Int mousePos = pathfinder.GetMousePosition();
+        if(mousePos != prevMousePos) {
+            pointerOverlayMap.SetTile(prevMousePos, null);
+            pointerOverlayMap.SetTile(mousePos, hoverTile);
+            prevMousePos = mousePos;
+        }
         if(unitController.mode == UnitController.Mode.OpenSelect) {
             if(pathfinder.pathChanged == true) {
                 arrowOverlayMap.ClearAllTiles();
@@ -43,12 +52,7 @@ public class PathDisplay : MonoBehaviour
                 pathfinder.pathChanged = false;
                 showingRange = false;
             }
-            Vector3Int mousePos = pathfinder.GetMousePosition();
-            if(mousePos != prevMousePos) {
-                arrowOverlayMap.SetTile(prevMousePos, null);
-                arrowOverlayMap.SetTile(mousePos, hoverTile);
-                prevMousePos = mousePos;
-            }
+            
         }
         else if(unitController.mode == UnitController.Mode.Pathfind) {
             if(pathfinder.pathChanged) {
@@ -64,6 +68,7 @@ public class PathDisplay : MonoBehaviour
     private void DrawPath() {
         arrowOverlayMap.ClearAllTiles();
         List<Vector3Int> path = pathfinder.GetPath();
+
         if(path.Count == 1) {
             arrowOverlayMap.SetTile(path[0], arrowOne);
             return;
@@ -155,12 +160,18 @@ public class PathDisplay : MonoBehaviour
     private void DrawRange() {
         rangeOverlayMap.ClearAllTiles();
         Vector3Int start = pathfinder.GetPath()[0];
+        Debug.Log("Draw Range Start: " + start);
         int length = pathfinder.maxLength;
         for(int i = length * -1; i <= length; i++) {
             for(int j = length * -1; j <= length; j++) {
-                if((Mathf.Abs(i) + Mathf.Abs(j)) <= length) {
-                    rangeOverlayMap.SetTile(new Vector3Int(start.x + i, start.y + j, 0), tileHighlight);
+                Vector3Int dest = new Vector3Int(start.x + i, start.y + j, 0);
+                if(movementGrid.GetMovementTile(dest) != null) {
+                    List<Vector3Int> testPath = pathfinder.AStar(start, dest, new List<Vector3Int> { start });
+                    if(testPath.Count > 0 && testPath[testPath.Count - 1] == dest) {
+                        rangeOverlayMap.SetTile(new Vector3Int(start.x + i, start.y + j, 0), tileHighlight);
+                    }
                 }
+                
             }
         }
         showingRange = true;

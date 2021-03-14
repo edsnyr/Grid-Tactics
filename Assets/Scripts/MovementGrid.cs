@@ -10,7 +10,7 @@ public class MovementGrid : MonoBehaviour
 
     public TileBase movementTile1;
     public TileBase movementTile2;
-    public TileBase movementTile9;
+    public TileBase movementTile99;
 
     Dictionary<Vector3Int, MovementTile> movementTiles;
 
@@ -42,8 +42,8 @@ public class MovementGrid : MonoBehaviour
                     if(tile == movementTile2) {
                         cost = 2;
                     }
-                    if(tile == movementTile9) {
-                        cost = 9;
+                    if(tile == movementTile99) {
+                        cost = 99;
                     }
                     movementTiles.Add(coordinates, new MovementTile(coordinates, cost));
                 }
