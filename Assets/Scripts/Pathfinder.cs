@@ -43,7 +43,7 @@ public class Pathfinder : MonoBehaviour {
     }
 
     public void Pathfind(Vector3Int prevPos, Vector3Int destPos) {
-
+        Debug.Log(path.Count);
         if(destPos == path[0]) {
             path = new List<Vector3Int> {
                 destPos
@@ -57,20 +57,28 @@ public class Pathfinder : MonoBehaviour {
 
         CheckForOverlap(ref go, destPos);
 
-        /*
-        Vector3Int nextPos = prevPos;
-        while(go && nextPos.x != destPos.x) {
-            nextPos += new Vector3Int((int)Mathf.Sign(destPos.x - prevPos.x), 0, 0);
-            AddToPath(ref go, nextPos);
-        }
-        while(go && nextPos.y != destPos.y) {
-            nextPos += new Vector3Int(0, (int)Mathf.Sign(destPos.y - prevPos.y), 0);
-            AddToPath(ref go, nextPos);
-        }
-        */
-
         if(go) {
-            AStar(path[path.Count -1], destPos, ref go);
+            List<Vector3Int> newPath = AStar(path[path.Count -1], destPos, ref go);
+
+            if(newPath[newPath.Count - 1] != destPos) {
+                Debug.Log("Try reroute");
+                Vector3Int startPos = path[0];
+                path = new List<Vector3Int> {
+                    startPos
+                };
+                List<Vector3Int> tryPath = AStar(path[0], destPos, ref go);
+                Debug.Log("TryPath: " + tryPath.Count);
+                if(tryPath.Count != 0 && tryPath[tryPath.Count - 1] == destPos) {
+                    path = tryPath;
+                    Debug.Log("Choose TryPath count: " + path.Count);
+                } else {
+                    path = newPath;
+                    Debug.Log("Choose New Path count: " + path.Count);
+                }
+            } else {
+                path = newPath;
+                Debug.Log("Found Path count: " + path.Count);
+            }
         }
 
         /*
@@ -93,12 +101,13 @@ public class Pathfinder : MonoBehaviour {
     }
 
 
-    private void AStar(Vector3Int startPos, Vector3Int destPos, ref bool go) {
+    private List<Vector3Int> AStar(Vector3Int startPos, Vector3Int destPos, ref bool go) {
         MovementTile startTile = movementGrid.GetMovementTile(startPos);
         MovementTile endTile = movementGrid.GetMovementTile(destPos);
 
         if(startTile == null || endTile == null) {
-            return;
+            Debug.Log("Start or end point invalid");
+            return path;
         }
 
         List<MovementTile> openTiles = new List<MovementTile>();
@@ -119,8 +128,7 @@ public class Pathfinder : MonoBehaviour {
             closedTiles.Add(currentTile);
 
             if(currentTile == endTile) {
-                AddToPath(RetracePath(startTile, endTile), maxLength, ref go);
-                return;
+                return AddToPath(RetracePath(startTile, endTile), maxLength, ref go);
             }
 
             foreach(MovementTile neighbor in currentTile.neighbors) {
@@ -141,6 +149,8 @@ public class Pathfinder : MonoBehaviour {
             }
 
         }
+        Debug.Log("Escaped");
+        return null;
     }
 
     private int GetHeuristicDistance(MovementTile neighbor, MovementTile endTile) {
@@ -166,7 +176,7 @@ public class Pathfinder : MonoBehaviour {
         return path;
     }
 
-    private void AddToPath(List<Vector3Int> addedPath, int maxPathLength, ref bool go) {
+    private List<Vector3Int> AddToPath(List<Vector3Int> addedPath, int maxPathLength, ref bool go) {
         int currentLength = GetCurrentPathLength();
         Debug.Log("Current Length before loop: " + currentLength);
         
@@ -182,10 +192,11 @@ public class Pathfinder : MonoBehaviour {
                 Debug.Log("Path too long");
                 go = false;
                 ReturnToLastValidEndPoint();
-                return;
+                return path;
             }
         }
         lastValidEndPoint = path[path.Count - 1];
+        return path;
     }
 
     private int GetCurrentPathLength() {
