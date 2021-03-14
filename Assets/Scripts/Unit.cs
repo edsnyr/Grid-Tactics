@@ -20,4 +20,26 @@ public class Unit : MonoBehaviour
     {
         
     }
+
+    public IEnumerator MoveOnPath(List<Vector3Int> path, float time) {
+        if(position != path[0]) {
+            Debug.Log("Wrong start location");
+            yield return null;
+        } else {
+            for(int i = 1; i < path.Count; i++) {
+                Vector3 startPos = transform.position;
+
+                float elapsedTime = 0;
+
+                while(elapsedTime < time) {
+                    transform.position = Vector3.Lerp(startPos, path[i], (elapsedTime / time));
+                    elapsedTime += Time.deltaTime;
+                    yield return null;
+                }
+            }
+            transform.position = path[path.Count - 1];
+            position = path[path.Count - 1];
+
+        }
+    }
 }

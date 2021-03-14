@@ -8,6 +8,7 @@ public class PathDisplay : MonoBehaviour
 {
 
     public Pathfinder pathfinder;
+    public UnitController unitController;
 
     public Grid grid;
     public Tilemap arrowOverlayMap;
@@ -35,7 +36,7 @@ public class PathDisplay : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(pathfinder.mode == Pathfinder.Mode.OpenSelect) {
+        if(unitController.mode == UnitController.Mode.OpenSelect) {
             if(pathfinder.pathChanged == true) {
                 arrowOverlayMap.ClearAllTiles();
                 rangeOverlayMap.ClearAllTiles();
@@ -44,13 +45,12 @@ public class PathDisplay : MonoBehaviour
             }
             Vector3Int mousePos = pathfinder.GetMousePosition();
             if(mousePos != prevMousePos) {
-                Debug.Log(mousePos);
                 arrowOverlayMap.SetTile(prevMousePos, null);
                 arrowOverlayMap.SetTile(mousePos, hoverTile);
                 prevMousePos = mousePos;
             }
         }
-        else if(pathfinder.mode == Pathfinder.Mode.Pathfind) {
+        else if(unitController.mode == UnitController.Mode.Pathfind) {
             if(pathfinder.pathChanged) {
                 DrawPath();
                 pathfinder.pathChanged = false;
