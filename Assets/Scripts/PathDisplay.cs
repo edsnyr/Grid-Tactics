@@ -35,8 +35,7 @@ public class PathDisplay : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        Debug.Log(rangeOverlayMap.localBounds.min);
-        Debug.Log(rangeOverlayMap.localBounds.max);
+        
     }
 
     // Update is called once per frame
@@ -175,8 +174,12 @@ public class PathDisplay : MonoBehaviour
                 if(movementGrid.GetMovementTile(dest) != null) {
                     List<Vector3Int> testPath = pathfinder.AStar(start, dest, new List<Vector3Int> { start });
                     if(testPath == null) { //pathfinding escaped, no path
-                        List<Vector3Int> attackingTiles = GetAttackableTiles(unitController.GetSelectedUnit().position);
+                        List<Vector3Int> attackingTiles = unitController.GetAttackableTiles(unitController.GetSelectedUnit().position);
                         foreach(Vector3Int location in attackingTiles) {
+                            if(movementGrid.GetMovementTile(location) == null) {
+                                Debug.Log("Attack location out of bounds: " + location);
+                                continue;
+                            }
                             if(!highlightStatuses.ContainsKey(location)) {
                                 Unit unitAtLocation = unitController.CheckForUnit(location);
                                 if(unitAtLocation != null) {
@@ -197,8 +200,12 @@ public class PathDisplay : MonoBehaviour
                         }
                     } else if(testPath.Count > 0 && testPath[testPath.Count - 1] == dest) {
                         //Debug.Log("Getting attack highlights for: " + testPath[testPath.Count - 1]);
-                        List<Vector3Int> attackingTiles = GetAttackableTiles(testPath[testPath.Count - 1]);
+                        List<Vector3Int> attackingTiles = unitController.GetAttackableTiles(testPath[testPath.Count - 1]);
                         foreach(Vector3Int location in attackingTiles) {
+                            if(movementGrid.GetMovementTile(location) == null) {
+                                Debug.Log("Attack location out of bounds: " + location);
+                                continue;
+                            }
                             //Debug.Log("Enter Attack Highlight for location: " + location);
                             if(!highlightStatuses.ContainsKey(location)) {
                                 Unit unitAtLocation = unitController.CheckForUnit(location);
@@ -241,38 +248,5 @@ public class PathDisplay : MonoBehaviour
             }
         }
         showingRange = true;
-    }
-
-    private List<Vector3Int> GetAttackableTiles(Vector3Int location) {
-        List<Vector3Int> attackableTiles = new List<Vector3Int>();
-        int maxRange = unitController.GetSelectedUnit().maxAttackRange;
-        for(int i = maxRange * -1; i <= maxRange; i++) {
-            for(int j = maxRange * -1; j <= maxRange; j++) {
-                int dist = Mathf.Abs(i) + Mathf.Abs(j);
-                Debug.Log(i + " " + j + " " + dist);
-                if(dist == 0 || dist > maxRange || dist < unitController.GetSelectedUnit().minAttackRange) {
-                    //Debug.Log("Not in range");
-                    continue;
-                } else {
-                    Vector3Int attackingLocation = new Vector3Int(location.x + i, location.y + j, 0);
-                    Debug.Log(location);
-                    Debug.Log(attackingLocation);
-                    if(movementGrid.GetMovementTile(attackingLocation) != null) {
-                        attackableTiles.Add(attackingLocation);
-                    }
-                }
-            }
-        }
-        //Debug.Log("Number of attacking tiles: " + attackableTiles.Count);
-        return attackableTiles;
-        /*
-        for(int i = unitController.GetSelectedUnit().minAttackRange; i <= unitController.GetSelectedUnit().maxAttackRange; i++) {
-            foreach(Vector3Int adjacent in adjacents) {
-                Vector3Int checkLocation = location + (adjacent * i);
-
-            }
-        }
-        */
-        
     }
 }

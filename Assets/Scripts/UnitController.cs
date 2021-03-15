@@ -72,5 +72,28 @@ public class UnitController : MonoBehaviour
         }
         return null;
     }
-    
+
+    public List<Vector3Int> GetAttackableTiles(Vector3Int location) {
+        List<Vector3Int> attackableTiles = new List<Vector3Int>();
+        int maxRange = selectedUnit.maxAttackRange;
+        for(int i = maxRange * -1; i <= maxRange; i++) {
+            for(int j = maxRange * -1; j <= maxRange; j++) {
+                int dist = Mathf.Abs(i) + Mathf.Abs(j);
+                Debug.Log(i + " " + j + " " + dist);
+                if(dist == 0 || dist > maxRange || dist < selectedUnit.minAttackRange) {
+                    //Debug.Log("Not in range");
+                    continue;
+                } else {
+                    Vector3Int attackingLocation = new Vector3Int(location.x + i, location.y + j, 0);
+                    Debug.Log(location);
+                    Debug.Log(attackingLocation);
+                    
+                    attackableTiles.Add(attackingLocation);
+                }
+            }
+        }
+        return attackableTiles;
+
+    }
+
 }

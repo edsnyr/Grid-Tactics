@@ -11,20 +11,27 @@ public class Unit : MonoBehaviour
     public int teamNumber;
     public Vector3Int position;
 
+    public int startingHealth;
+    public Resource health;
+    public List<ResourceDisplay> healthDisplayPrefabs;
+
     public int maxMovement;
     public int minAttackRange;
     public int maxAttackRange;
+
     public GroundStatus groundStatus;
     public bool canMove;
 
     private void Awake() {
         transform.position = position;
+        
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        
+        health = new Resource(startingHealth);
+        health.AddResourceDisplays(InstantiateHealthDisplays());
     }
 
     // Update is called once per frame
@@ -38,6 +45,7 @@ public class Unit : MonoBehaviour
             Debug.Log("Wrong start location");
             yield return null;
         } else {
+            SetHealthDisplays(false);
             for(int i = 1; i < path.Count; i++) {
                 Vector3 startPos = transform.position;
 
@@ -51,7 +59,30 @@ public class Unit : MonoBehaviour
             }
             transform.position = path[path.Count - 1];
             position = path[path.Count - 1];
+            SetHealthDisplays(true);
+        }
+    }
 
+    private List<ResourceDisplay> InstantiateHealthDisplays() {
+        Canvas canvas = FindObjectOfType<Canvas>();
+        if(canvas == null) {
+            Debug.Log("Cannot find canvas");
+            return null;
+        }
+        List<ResourceDisplay> displays = new List<ResourceDisplay>();
+        foreach(ResourceDisplay prefab in healthDisplayPrefabs) {
+            Debug.Log("Instantiate prefab");
+            ResourceDisplay rd = Instantiate(prefab, canvas.transform);
+            rd.SetParentUnit(this);
+            displays.Add(rd);
+        }
+        Debug.Log(displays.Count);
+        return displays;
+    }
+
+    public void SetHealthDisplays(bool enabled) {
+        foreach(ResourceDisplay rd in health.GetDisplays()) {
+            rd.gameObject.SetActive(enabled);
         }
     }
 }
