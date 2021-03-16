@@ -50,11 +50,9 @@ public class ResourceSlider : ResourceDisplay
 
     private void AlignWithParent() {
         Vector3 pos = parentUnit.transform.position;
-        Debug.Log(pos);
         Vector2 canvasPos;
         Vector2 screenPoint = Camera.main.WorldToScreenPoint(pos);
         RectTransformUtility.ScreenPointToLocalPointInRectangle(FindObjectOfType<Canvas>().GetComponent<RectTransform>(), screenPoint, null, out canvasPos);
-        Debug.Log(canvasPos);
         transform.localPosition = canvasPos + new Vector2(0,-20);
     }
 }

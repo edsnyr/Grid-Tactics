@@ -160,11 +160,19 @@ public class PathDisplay : MonoBehaviour
     }
 
     private void DrawRange() {
+        //Debug.Log("Drawing Range");
         rangeOverlayMap.ClearAllTiles();
         Vector3Int start = pathfinder.GetPath()[0];
         //Debug.Log("Draw Range Start: " + start);
         int length = pathfinder.maxLength;
+        if(length == 0) {
+            List<Vector3Int> attackingTiles = unitController.GetAttackableTiles(unitController.GetSelectedUnit().position);
+            DisplayCurrentAttackRange(attackingTiles);
+            showingRange = true;
+            return;
+        }
         Dictionary<Vector3Int, RangeStatus> highlightStatuses = new Dictionary<Vector3Int, RangeStatus>();
+        List<Unit> unitsInRange = new List<Unit>();
         for(int i = length * -1; i <= length; i++) {
             for(int j = length * -1; j <= length; j++) {
                 Vector3Int dest = new Vector3Int(start.x + i, start.y + j, 0);
@@ -175,29 +183,7 @@ public class PathDisplay : MonoBehaviour
                     List<Vector3Int> testPath = pathfinder.AStar(start, dest, new List<Vector3Int> { start });
                     if(testPath == null) { //pathfinding escaped, no path
                         List<Vector3Int> attackingTiles = unitController.GetAttackableTiles(unitController.GetSelectedUnit().position);
-                        foreach(Vector3Int location in attackingTiles) {
-                            if(movementGrid.GetMovementTile(location) == null) {
-                                Debug.Log("Attack location out of bounds: " + location);
-                                continue;
-                            }
-                            if(!highlightStatuses.ContainsKey(location)) {
-                                Unit unitAtLocation = unitController.CheckForUnit(location);
-                                if(unitAtLocation != null) {
-                                    if(unitAtLocation.teamNumber == unitController.GetSelectedUnit().teamNumber) {
-                                        //Debug.Log("Marked blocked by ally");
-                                        highlightStatuses.Add(location, RangeStatus.BlockedByAlly);
-                                    } else {
-                                        //Debug.Log("Marked blocked by enemy");
-                                        highlightStatuses.Add(location, RangeStatus.BlockedByEnemy);
-                                        rangeOverlayMap.SetTile(location, attackTileHighlight);
-                                    }
-                                } else {
-                                    //Debug.Log("Marked attacking");
-                                    highlightStatuses.Add(location, RangeStatus.Attack);
-                                    rangeOverlayMap.SetTile(location, attackTileHighlight);
-                                }
-                            }
-                        }
+                        DisplayCurrentAttackRange(attackingTiles);
                     } else if(testPath.Count > 0 && testPath[testPath.Count - 1] == dest) {
                         //Debug.Log("Getting attack highlights for: " + testPath[testPath.Count - 1]);
                         List<Vector3Int> attackingTiles = unitController.GetAttackableTiles(testPath[testPath.Count - 1]);
@@ -216,6 +202,7 @@ public class PathDisplay : MonoBehaviour
                                     } else {
                                         //Debug.Log("Marked blocked by enemy");
                                         highlightStatuses.Add(location, RangeStatus.BlockedByEnemy);
+                                        unitsInRange.Add(unitAtLocation);
                                         rangeOverlayMap.SetTile(location, attackTileHighlight);
                                     }
                                 } else {
@@ -247,6 +234,41 @@ public class PathDisplay : MonoBehaviour
                 }
             }
         }
+        unitController.SetUnitsInAttackRange(unitsInRange);
         showingRange = true;
+    }
+
+    public void DisplayCurrentAttackRange(List<Vector3Int> attackingTiles) {
+        Dictionary<Vector3Int, RangeStatus> highlightStatuses = new Dictionary<Vector3Int, RangeStatus>();
+        List<Unit> unitsInRange = new List<Unit>();
+        foreach(Vector3Int location in attackingTiles) {
+            if(movementGrid.GetMovementTile(location) == null) {
+                Debug.Log("Attack location out of bounds: " + location);
+                continue;
+            }
+            if(!highlightStatuses.ContainsKey(location)) {
+                Unit unitAtLocation = unitController.CheckForUnit(location);
+                if(unitAtLocation != null) {
+                    if(unitAtLocation.teamNumber == unitController.GetSelectedUnit().teamNumber) {
+                        //Debug.Log("Marked blocked by ally");
+                        highlightStatuses.Add(location, RangeStatus.BlockedByAlly);
+                    } else {
+                        //Debug.Log("Marked blocked by enemy");
+                        highlightStatuses.Add(location, RangeStatus.BlockedByEnemy);
+                        unitsInRange.Add(unitAtLocation);
+                        rangeOverlayMap.SetTile(location, attackTileHighlight);
+                    }
+                } else {
+                    //Debug.Log("Marked attacking");
+                    highlightStatuses.Add(location, RangeStatus.Attack);
+                    rangeOverlayMap.SetTile(location, attackTileHighlight);
+                }
+            }
+        }
+        unitController.SetUnitsInAttackRange(unitsInRange);
+    }
+
+    public void ClearRange() {
+        rangeOverlayMap.ClearAllTiles();
     }
 }

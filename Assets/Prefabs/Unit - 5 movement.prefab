@@ -98,11 +98,15 @@ MonoBehaviour:
   unitName: This Unit
   teamNumber: 1
   position: {x: 0, y: 0, z: 0}
+  returnPosition: {x: 0, y: 0, z: 0}
   startingHealth: 10
   healthDisplayPrefabs:
   - {fileID: 3708419204110382315, guid: 1ed1d129033c52a479275b7844328fa7, type: 3}
+  weapons:
+  - {fileID: 11400000, guid: 83d80a823c9558643874968996910528, type: 2}
+  equippedWeapon: {fileID: 0}
   maxMovement: 5
-  minAttackRange: 1
-  maxAttackRange: 1
+  minAttackRange: 0
+  maxAttackRange: 0
   groundStatus: 0
   canMove: 1

@@ -10,10 +10,14 @@ public class Unit : MonoBehaviour
     public string unitName;
     public int teamNumber;
     public Vector3Int position;
+    public Vector3Int returnPosition;
 
     public int startingHealth;
     public Resource health;
     public List<ResourceDisplay> healthDisplayPrefabs;
+
+    public List<Weapon> weapons;
+    public Weapon equippedWeapon;
 
     public int maxMovement;
     public int minAttackRange;
@@ -24,7 +28,21 @@ public class Unit : MonoBehaviour
 
     private void Awake() {
         transform.position = position;
-        
+        foreach(Weapon weapon in weapons) {
+            if(minAttackRange == 0) {
+                minAttackRange = weapon.minRange;
+            }
+            if(maxAttackRange == 0) {
+                maxAttackRange = weapon.maxRange;
+            }
+            if(weapon.minRange < minAttackRange) {
+                minAttackRange = weapon.minRange;
+            }
+            if(weapon.maxRange > maxAttackRange) {
+                maxAttackRange = weapon.maxRange;
+            }
+        }
+        equippedWeapon = weapons[0];
     }
 
     // Start is called before the first frame update
@@ -57,10 +75,17 @@ public class Unit : MonoBehaviour
                     yield return null;
                 }
             }
+            returnPosition = position;
             transform.position = path[path.Count - 1];
             position = path[path.Count - 1];
             SetHealthDisplays(true);
         }
+    }
+
+    public void UndoMove() {
+        transform.position = returnPosition;
+        position = returnPosition;
+        UpdateHealthDisplays();
     }
 
     private List<ResourceDisplay> InstantiateHealthDisplays() {
@@ -71,18 +96,29 @@ public class Unit : MonoBehaviour
         }
         List<ResourceDisplay> displays = new List<ResourceDisplay>();
         foreach(ResourceDisplay prefab in healthDisplayPrefabs) {
-            Debug.Log("Instantiate prefab");
+            //Debug.Log("Instantiate prefab");
             ResourceDisplay rd = Instantiate(prefab, canvas.transform);
             rd.SetParentUnit(this);
             displays.Add(rd);
         }
-        Debug.Log(displays.Count);
         return displays;
     }
 
     public void SetHealthDisplays(bool enabled) {
         foreach(ResourceDisplay rd in health.GetDisplays()) {
             rd.gameObject.SetActive(enabled);
+        }
+    }
+
+    private void UpdateHealthDisplays() {
+        foreach(ResourceDisplay rd in health.GetDisplays()) {
+            rd.UpdateDisplay();
+        }
+    }
+
+    public void DestroyHealthDisplays() {
+        foreach(ResourceDisplay rd in health.GetDisplays()) {
+            Destroy(rd.gameObject);
         }
     }
 }

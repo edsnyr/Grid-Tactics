@@ -40,7 +40,7 @@ public class Pathfinder : MonoBehaviour {
     }
 
     public void Pathfind(Vector3Int prevPos, Vector3Int destPos) {
-        Debug.Log(path.Count);
+        //Debug.Log(path.Count);
         if(destPos == path[0]) {
             path = new List<Vector3Int> {
                 destPos
@@ -61,23 +61,23 @@ public class Pathfinder : MonoBehaviour {
                 return;
             }
             if(newPath.Count > 0 && newPath[newPath.Count - 1] != destPos) {
-                Debug.Log("Try reroute");
+                //Debug.Log("Try reroute");
                 Vector3Int startPos = path[0];
                 path = new List<Vector3Int> {
                     startPos
                 };
                 List<Vector3Int> tryPath = AStar(path[0], destPos, path);
-                Debug.Log("TryPath: " + tryPath.Count);
+                //Debug.Log("TryPath: " + tryPath.Count);
                 if(tryPath.Count != 0 && tryPath[tryPath.Count - 1] == destPos) {
                     path = tryPath;
-                    Debug.Log("Choose TryPath count: " + path.Count);
+                    //Debug.Log("Choose TryPath count: " + path.Count);
                 } else {
                     path = newPath;
-                    Debug.Log("Choose New Path count: " + path.Count);
+                    //Debug.Log("Choose New Path count: " + path.Count);
                 }
             } else {
                 path = newPath;
-                Debug.Log("Found Path count: " + path.Count);
+                //Debug.Log("Found Path count: " + path.Count);
             }
             lastValidEndPoint = path[path.Count - 1];
         }
@@ -209,7 +209,7 @@ public class Pathfinder : MonoBehaviour {
                 currentPath.Add(tile);
                 currentLength = newLength;
             } else {
-                Debug.Log("Path too long");
+                //Debug.Log("Path too long");
                 currentPath = ReturnToLastValidEndPoint(currentPath);
                 return currentPath;
             }

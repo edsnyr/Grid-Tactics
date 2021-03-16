@@ -7,13 +7,17 @@ public class UnitController : MonoBehaviour
 
     public float moveTime = 0.3f;
 
-    public enum Mode { OpenSelect, Pathfind };
+    public enum Mode { OpenSelect, Pathfind, ActionSelect, SelectTarget, WeaponSelect };
     public Mode mode = Mode.OpenSelect;
 
+    public MovementGrid movementGrid;
     public Pathfinder pathfinder;
+    public PathDisplay pathDisplay;
+    public ActionMenu actionMenu;
 
     public List<Unit> units;
     Unit selectedUnit;
+    public List<Unit> unitsInAttackRange;
 
     public Vector3Int prevMousePos = new Vector3Int();
 
@@ -38,10 +42,30 @@ public class UnitController : MonoBehaviour
                     }
                 }
             } else if(mode == Mode.Pathfind) {
-                
+                /*
+                foreach(Unit unit in unitsInAttackRange) {
+                    if(mousePos == unit.position) {
+                        Debug.Log("Open attack menu");
+                        mode = Mode.ActionSelect;
+                        pathDisplay.ClearRange();
+                        actionMenu.gameObject.SetActive(true);
+                        actionMenu.SetActionMenu(selectedUnit);
+                        return;
+                    }
+                }
+                */
                 StartCoroutine(MoveUnit());
                 prevMousePos = mousePos;
-                
+            } else if(mode == Mode.SelectTarget) {
+                foreach(Unit unit in unitsInAttackRange) {
+                    if(mousePos == unit.position) {
+                        mode = Mode.WeaponSelect;
+                        actionMenu.SetForecastMenu(selectedUnit, unit, GetDistance(selectedUnit, unit));
+
+                        //StartCombat(unit);
+                        return;
+                    }
+                }
             }
         }
 
@@ -59,6 +83,37 @@ public class UnitController : MonoBehaviour
         mode = Mode.OpenSelect;
         pathfinder.pathChanged = true;
         yield return StartCoroutine(selectedUnit.MoveOnPath(pathfinder.GetPath(), moveTime));
+        mode = Mode.ActionSelect;
+        actionMenu.gameObject.SetActive(true);
+        actionMenu.SetActionMenu(selectedUnit);
+    }
+
+    public void StartCombat(Unit attacker, Unit defender) {
+        Debug.Log(attacker + " attacks " + defender);
+
+        if(defender.health.ModifyCurrentValue(attacker.equippedWeapon.damage * -1) != 0) {
+            int dist = GetDistance(attacker, defender);
+            if(dist >= defender.equippedWeapon.minRange && dist <= defender.equippedWeapon.maxRange) {
+                if(attacker.health.ModifyCurrentValue(defender.equippedWeapon.damage * -1) == 0) {
+                    Debug.Log(attacker + " dies");
+                    KillUnit(attacker);
+                }
+            }
+        } else {
+            Debug.Log(defender + " dies");
+            KillUnit(defender);
+        }
+
+
+        actionMenu.gameObject.SetActive(false);
+        pathDisplay.ClearRange();
+        mode = Mode.OpenSelect;
+    }
+
+    private void KillUnit(Unit unit) {
+        units.Remove(unit);
+        unit.DestroyHealthDisplays();
+        Destroy(unit.gameObject);
     }
 
     public Unit GetSelectedUnit() {
@@ -79,21 +134,48 @@ public class UnitController : MonoBehaviour
         for(int i = maxRange * -1; i <= maxRange; i++) {
             for(int j = maxRange * -1; j <= maxRange; j++) {
                 int dist = Mathf.Abs(i) + Mathf.Abs(j);
-                Debug.Log(i + " " + j + " " + dist);
+                //Debug.Log(i + " " + j + " " + dist);
                 if(dist == 0 || dist > maxRange || dist < selectedUnit.minAttackRange) {
                     //Debug.Log("Not in range");
                     continue;
                 } else {
                     Vector3Int attackingLocation = new Vector3Int(location.x + i, location.y + j, 0);
-                    Debug.Log(location);
-                    Debug.Log(attackingLocation);
+                    //Debug.Log(location);
+                    //Debug.Log(attackingLocation);
                     
                     attackableTiles.Add(attackingLocation);
                 }
             }
         }
+
         return attackableTiles;
 
     }
+
+    public List<Unit> GetUnitsInAttackRange(List<Vector3Int> attackableTiles) {
+        List<Unit> unitsInRange = new List<Unit>();
+        foreach(Vector3Int location in attackableTiles) {
+            if(movementGrid.GetMovementTile(location) != null) {
+                foreach(Unit unit in units) {
+                    if(unit.position == location && unit.teamNumber != selectedUnit.teamNumber) {
+                        unitsInRange.Add(unit);
+                        break;
+                    }
+                }
+            }
+        }
+        return unitsInRange;
+    }
+
+    public void SetUnitsInAttackRange(List<Unit> units) {
+        unitsInAttackRange = units;
+    }
+
+    public int GetDistance(Unit a, Unit b) {
+        Vector3Int v = a.position - b.position;
+        int dist = Mathf.Abs(v.x) + Mathf.Abs(v.y);
+        return dist;
+    }
+
 
 }
