@@ -160,33 +160,37 @@ public class PathDisplay : MonoBehaviour
     }
 
     private void DrawRange() {
-        //Debug.Log("Drawing Range");
         rangeOverlayMap.ClearAllTiles();
         Vector3Int start = pathfinder.GetPath()[0];
-        //Debug.Log("Draw Range Start: " + start);
         int length = pathfinder.maxLength;
+
         if(length == 0) {
             List<Vector3Int> attackingTiles = unitController.GetAttackableTiles(unitController.GetSelectedUnit().position);
             DisplayCurrentAttackRange(attackingTiles);
             showingRange = true;
             return;
         }
+
         Dictionary<Vector3Int, RangeStatus> highlightStatuses = new Dictionary<Vector3Int, RangeStatus>();
         List<Unit> unitsInRange = new List<Unit>();
+
         for(int i = length * -1; i <= length; i++) {
             for(int j = length * -1; j <= length; j++) {
+
                 Vector3Int dest = new Vector3Int(start.x + i, start.y + j, 0);
                 if((Mathf.Abs(i) + Mathf.Abs(j)) > length || unitController.CheckForUnit(dest) != null) { //if true, always out of range even if there would be a direct path
                     continue;
                 }
+
                 if(movementGrid.GetMovementTile(dest) != null) {
                     List<Vector3Int> testPath = pathfinder.AStar(start, dest, new List<Vector3Int> { start });
+
                     if(testPath == null) { //pathfinding escaped, no path
                         List<Vector3Int> attackingTiles = unitController.GetAttackableTiles(unitController.GetSelectedUnit().position);
                         DisplayCurrentAttackRange(attackingTiles);
-                    } else if(testPath.Count > 0 && testPath[testPath.Count - 1] == dest) {
-                        //Debug.Log("Getting attack highlights for: " + testPath[testPath.Count - 1]);
+                    } else if(testPath.Count > 0 && testPath[testPath.Count - 1] == dest) { //there is a valid path to the coordinates
                         List<Vector3Int> attackingTiles = unitController.GetAttackableTiles(testPath[testPath.Count - 1]);
+
                         foreach(Vector3Int location in attackingTiles) {
                             if(movementGrid.GetMovementTile(location) == null) {
                                 Debug.Log("Attack location out of bounds: " + location);

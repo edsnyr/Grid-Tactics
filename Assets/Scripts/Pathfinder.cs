@@ -40,7 +40,6 @@ public class Pathfinder : MonoBehaviour {
     }
 
     public void Pathfind(Vector3Int prevPos, Vector3Int destPos) {
-        //Debug.Log(path.Count);
         if(destPos == path[0]) {
             path = new List<Vector3Int> {
                 destPos
@@ -61,44 +60,21 @@ public class Pathfinder : MonoBehaviour {
                 return;
             }
             if(newPath.Count > 0 && newPath[newPath.Count - 1] != destPos) {
-                //Debug.Log("Try reroute");
                 Vector3Int startPos = path[0];
                 path = new List<Vector3Int> {
                     startPos
                 };
                 List<Vector3Int> tryPath = AStar(path[0], destPos, path);
-                //Debug.Log("TryPath: " + tryPath.Count);
                 if(tryPath.Count != 0 && tryPath[tryPath.Count - 1] == destPos) {
                     path = tryPath;
-                    //Debug.Log("Choose TryPath count: " + path.Count);
                 } else {
                     path = newPath;
-                    //Debug.Log("Choose New Path count: " + path.Count);
                 }
             } else {
                 path = newPath;
-                //Debug.Log("Found Path count: " + path.Count);
             }
             lastValidEndPoint = path[path.Count - 1];
-        }
-
-        /*
-        if(!go) { //determine why the path cannot continue
-            Vector3Int diff = destPos - path[0]; //distance from start of path
-            if((Mathf.Abs(diff.x) + Mathf.Abs(diff.y)) > maxLength) {
-                Debug.Log("Position out of range");
-            } else {
-                Debug.Log("Out of length, recalculating");
-                Vector3Int start = path[0];
-                path = new List<Vector3Int>();
-                path.Add(start);
-                //Pathfind(start, destPos);
-                AStar(start, destPos, ref go);
-            }
-
-        }
-        */
-        
+        }        
     }
 
 
@@ -158,12 +134,6 @@ public class Pathfinder : MonoBehaviour {
 
         }
         Debug.Log("Escaped");
-        /*
-        List<Vector3Int> escapedList = new List<Vector3Int> {
-            startPos
-        };
-        return escapedList;
-        */
         return null;
     }
 
@@ -192,7 +162,6 @@ public class Pathfinder : MonoBehaviour {
 
     private List<Vector3Int> AddToPath(List<Vector3Int> addedPath, int maxPathLength, List<Vector3Int> currentPath) {
         int currentLength = GetCurrentPathLength(currentPath);
-        //Debug.Log("Current Length before loop: " + currentLength);
         
         if(unitController.CheckForUnit(addedPath[addedPath.Count - 1]) != null) {
             Debug.Log("Cannot stop on another unit");
@@ -202,19 +171,14 @@ public class Pathfinder : MonoBehaviour {
 
         foreach(Vector3Int tile in addedPath) {
             int newLength = currentLength + movementGrid.GetMovementTile(tile).movementCost;
-            //Debug.Log("New Length: " + newLength);
-            //Debug.Log("Path Count: " + currentPath.Count);
-            //Debug.Log(tile);
             if(newLength <= maxPathLength) {
                 currentPath.Add(tile);
                 currentLength = newLength;
             } else {
-                //Debug.Log("Path too long");
                 currentPath = ReturnToLastValidEndPoint(currentPath);
                 return currentPath;
             }
         }
-        //lastValidEndPoint = currentPath[currentPath.Count - 1];
         return currentPath;
     }
 
@@ -233,8 +197,6 @@ public class Pathfinder : MonoBehaviour {
             } else
                 return currentPath;
         }
-        Debug.Log("Last valid end point not in list, returning empty list");
-        Debug.Log("Last Valid End Point: " + lastValidEndPoint);
         return currentPath;
     }
 
@@ -244,7 +206,6 @@ public class Pathfinder : MonoBehaviour {
                 for(int j = path.Count - 1; j > i; j--) {
                     path.RemoveAt(j);
                 }
-                //Debug.Log("Retread current path, backtracking");
                 if(unitController.CheckForUnit(path[path.Count - 1]) != null) {
                     Debug.Log("Unit on retreaded path, back up one more");
                     path.RemoveAt(path.Count - 1);
